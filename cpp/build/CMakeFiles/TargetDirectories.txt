@@ -1,0 +1,5 @@
+/Users/opal/Desktop/school/space-debris-tracker/cpp/build/CMakeFiles/kf_cpp.dir
+/Users/opal/Desktop/school/space-debris-tracker/cpp/build/CMakeFiles/edit_cache.dir
+/Users/opal/Desktop/school/space-debris-tracker/cpp/build/CMakeFiles/rebuild_cache.dir
+/Users/opal/Desktop/school/space-debris-tracker/cpp/build/thirdparty/pybind11/CMakeFiles/edit_cache.dir
+/Users/opal/Desktop/school/space-debris-tracker/cpp/build/thirdparty/pybind11/CMakeFiles/rebuild_cache.dir
