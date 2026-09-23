@@ -3,19 +3,32 @@ import numpy as np
 
 #this modification will help later when we add 3 dims.. i think 
 iX = 0
-iV = 1
-n_var = iV + 1
+iY = 1
+iZ = 2
+iU = 3
+iV = 4
+iW = 5
+n_var = iW + 1
 class KF: 
-    def __init__(self, x_init: float, v_init: float, a_var: float) -> None: #self makes it be a specific instance of KF, so the array is stored there instead of the whole class
+    def __init__(self, pos_init: np.ndarray, vel_init: np.ndarray, a_var: float) -> None: #self makes it be a specific instance of KF, so the array is stored there instead of the whole class
         self._x = np.zeros(n_var)
+        #forcing the input to be floats
+        pos_init = np.asarray(pos_init, dtype=float)
+        vel_init = np.asarray(vel_init, dtype=float)
         #mean of the state
-        self._x[iX] = x_init
-        self._x[iV] = v_init
+        #position
+        self._x[iX] = pos_init[iX]
+        self._x[iY] = pos_init[iY]
+        self._x[iZ] = pos_init[iZ]
+        #velocity
+        self._x[iU] = vel_init[iU]
+        self._x[iV] = vel_init[iV]
+        self._x[iW] = vel_init[iW]
          #the underscore makes this variable private
         #acceleration variance 
         self._a_var = a_var 
         #covaraince of the state
-        self._P = np.eye(2) #this makes an identity matrix, 2 on the diagonal, initial covariance matrix 
+        self._P = np.eye(n_var) #this makes an identity matrix, 2 on the diagonal, initial covariance matrix 
 
 
     #predict  
@@ -24,11 +37,20 @@ class KF:
         #equations to predict 
         #new x = Fx
         #new P = F P Ft + G Gt a
+        #F Matrix
         F = np.eye(n_var)
-        F[iX,iV] = dt
-        G = np.zeros((2,1))
+        F[iX,iU] = dt
+        F[iY,iV] = dt
+        F[iZ,iW] = dt
+
+        #G Matrix
+        G = np.zeros((n_var,1)) #could make this into a loop maybe 
         G[iX] = 0.5*dt**2
+        G[iU] = dt
+        G[iY] = 0.5*dt**2
         G[iV] = dt
+        G[iZ] = 0.5*dt**2
+        G[iW] = dt
         #F = np.array([[1, dt], [0,1]]) #matrix from the equation 
         #G = np.array([[0.5*dt**2],[dt]])
         new_x = F.dot(self._x)
@@ -41,6 +63,7 @@ class KF:
     def update(self, meas_val: float, meas_var: float) :
         #equations: 
         #y = z - Hx updated position matrix considering measurements 
+        # i think here the y and the z is saying its the difference between the mean and the observed
         #S = H P Ht + R
         #K = P Ht s^-1 
         #x_z = x_k + K y, updated position considering measurement values 
@@ -48,6 +71,8 @@ class KF:
         #H = np.array([1,0]).reshape((1,2))
         H = np.zeros((1,n_var))
         H[iX] = 1
+        H[iY] = 1
+        H[iZ] = 1
         z = np.array([meas_val])
         R = np.array([meas_var])
 
