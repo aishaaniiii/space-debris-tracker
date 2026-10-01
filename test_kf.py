@@ -21,17 +21,21 @@ from parameterized import parameterized_class
 class testKF(unittest.TestCase):
     def test_can_construct(self):
         x = 0.2
+        y = 0.2
+        z = 0.2
+        u = 0.5
         v = 0.5
+        w = 0.5
 
-        kf = self.KF(x,v, 1.2)
-        self.assertAlmostEqual(kf.pos, x)
-        self.assertAlmostEqual(kf.vel, v)
+        kf = self.KF([x,y,z],[u,v,w], 1.2)
+        np.testing.assert_allclose(kf.pos, [x, y, z])
+        np.testing.assert_allclose(kf.vel, [u, v, w])
 
     def test_predict(self):
         x = 0.2
         v = 0.5
 
-        kf = self.KF(x,  v, 1.2)
+        kf = self.KF([x,x,x], [v,v,v], 1.2)
         #runnning predict several times to see effect of accumulating uncertainty
         for i in range(10):
             det_1 = np.linalg.det(kf.cov) #if the uncertainity increases, so should the determinant of the predict matrix 
@@ -39,19 +43,18 @@ class testKF(unittest.TestCase):
             det_2 = np.linalg.det(kf.cov)
             print(det_1, det_2)
             self.assertGreater(det_2,det_1) #should come out as true
-
         #also checks if mean and covariance are of right dimensions 
-        self.assertEqual(kf.cov.shape, (2,2))
-        self.assertEqual(kf.mean.shape, (2,))
+        self.assertEqual(kf.cov.shape, (6,6))
+        self.assertEqual(kf.mean.shape, (6,))
 
     def test_update(self): #not a complete test yet
         x = 0.2
         v = 0.5
 
-        kf = self.KF(x,  v,  1.2)
+        kf = self.KF([x,x,x], [v,v,v],  1.2)
 
         det_1 = np.linalg.det(kf.cov)
-        kf.update( 0.8, 0.5)
+        kf.update( [0.8,0.8,0.8], 0.5)
         det_2 = np.linalg.det(kf.cov)
 
         self.assertLess(det_2,det_1)

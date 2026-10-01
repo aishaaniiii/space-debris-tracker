@@ -21,9 +21,9 @@ class KF:
         self._x[iY] = pos_init[iY]
         self._x[iZ] = pos_init[iZ]
         #velocity
-        self._x[iU] = vel_init[iU]
-        self._x[iV] = vel_init[iV]
-        self._x[iW] = vel_init[iW]
+        self._x[iU] = vel_init[iX]
+        self._x[iV] = vel_init[iY]
+        self._x[iW] = vel_init[iZ]
          #the underscore makes this variable private
         #acceleration variance 
         self._a_var = a_var 
@@ -44,13 +44,19 @@ class KF:
         F[iZ,iW] = dt
 
         #G Matrix
-        G = np.zeros((n_var,1)) #could make this into a loop maybe 
-        G[iX] = 0.5*dt**2
-        G[iU] = dt
-        G[iY] = 0.5*dt**2
-        G[iV] = dt
-        G[iZ] = 0.5*dt**2
-        G[iW] = dt
+        G = np.zeros((n_var,3)) #could make this into a loop maybe 
+        #changes in x axis 
+        G[iX,0] = 0.5*dt**2
+        G[iU,0] = dt
+
+        #changes in y axis
+        G[iY,1] = 0.5*dt**2
+        G[iV,1] = dt
+
+        #changes in z axis 
+        G[iZ,2] = 0.5*dt**2
+        G[iW,2] = dt
+
         #F = np.array([[1, dt], [0,1]]) #matrix from the equation 
         #G = np.array([[0.5*dt**2],[dt]])
         new_x = F.dot(self._x)
@@ -60,7 +66,7 @@ class KF:
         self._P = new_P
         # pass #just a place holder while the function is empty.
 
-    def update(self, meas_val: float, meas_var: float) :
+    def update(self, meas_val: np.ndarray, meas_var: float) :
         #equations: 
         #y = z - Hx updated position matrix considering measurements 
         # i think here the y and the z is saying its the difference between the mean and the observed
@@ -69,18 +75,18 @@ class KF:
         #x_z = x_k + K y, updated position considering measurement values 
         #P_z = (I - KH)Pk : updated covariance matrix considering the measurement values 
         #H = np.array([1,0]).reshape((1,2))
-        H = np.zeros((1,n_var))
-        H[iX] = 1
-        H[iY] = 1
-        H[iZ] = 1
-        z = np.array([meas_val])
-        R = np.array([meas_var])
+        H = np.zeros((3,n_var))
+        H[0,iX] = 1
+        H[1,iY] = 1
+        H[2,iZ] = 1
+        z = np.asarray(meas_val)
+        R = np.eye(3) * meas_var
 
         y = z - H.dot(self._x)
         S = H.dot(self._P).dot(H.T) + R
         K = self._P.dot(H.T).dot(np.linalg.inv(S))
         up_x = self._x + K.dot(y)
-        up_P = (np.eye(2) - K.dot(H)).dot(self._P)
+        up_P = (np.eye(n_var) - K.dot(H)).dot(self._P)
 
         self._x = up_x 
         self._P = up_P
@@ -99,9 +105,9 @@ class KF:
         return self._x
     
     @property #with the underscore, the private ones can change but a property is more stable since it is public
-    def pos(self) -> float:
-        return self._x[iX]
+    def pos(self) -> np.ndarray:
+        return ([self._x[iX],self._x[iY],self._x[iZ]])
         
     @property
-    def vel(self) -> float:
-        return self._x[iV]
+    def vel(self) -> np.ndarray:
+        return ([self._x[iU],self._x[iV],self._x[iW]])
