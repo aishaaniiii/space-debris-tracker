@@ -52,7 +52,7 @@ covs = np.array(covs)
 fig = plt.figure(figsize=(12,8))
 
 #3D plot 
-ax3d = fig.add_subplot(2,3, (1,2), projection = '3d') #positioning the subplot
+ax3d = fig.add_subplot(2,3, (2), projection = '3d') #positioning the subplot
 ax3d.set_box_aspect([1,1,1])
 ax3d.plot(real_poss[:,0],real_poss[:,1],real_poss[:,2], 'k', label='True Path')
 ax3d.plot(means[:,0],means[:,1],means[:,2],'r--', label='KF Estimate')
