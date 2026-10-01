@@ -2,18 +2,60 @@ import matplotlib.pyplot as plt
 import numpy as np 
 from kf import KF
 
-plt.ion()
-plt.figure()
+#getting space track space debris data 
+from dotenv import load_dotenv #this is for the password and username
+import os
+
+load_dotenv()
+spacetrack_user = os.getenv("SPACETRACK_USERNAME")
+spacetrack_pass = os.getenv("SPACETRACK_PASSWORD")
+
+from spacetrack import SpaceTrackClient 
+from sgp4.api import Satrec, jday
+
+#plt.ion()
+#plt.figure()
 
 # real measured values! 
 real_x = np.array([0.0, 0.0, 0.0])
 meas_var = 0.1 ** 2 #simulating noise 
 real_v = np.array([0.9,0.4,0.1]) #completely arbitrary right now
 
+#tle captures orbital parameters, inlcination, eccentricity, how elliptical and mean motion
+#TLE gives the recipe while sgp4 module lets us convert it into xyz that can be used with the Kalman filter
+#starting query will be the ISS! YAY!
+st = SpaceTrackClient(identity=spacetrack_user, password=spacetrack_pass)
+#the norad id is what chooses the object to track
+
+#choosing a non decayed debris
+tle_data = st.gp(norad_cat_id=33655, orderby='epoch desc',limit = 1, format='tle')
+print(tle_data)
+
+#example output: 
+#1 33655U 99025DEQ 26273.55513619  .00019231  00000-0  10433-2 0  9991
+#2 33655  98.8014  24.8857 0032061 119.5904 240.8525 15.14175888  9439
+
+#splitting the lines: 
+lines = tle_data.strip().split('\n')
+line1 = lines[0]
+line2 = lines[1]
+satrec = Satrec.twoline2rv(line1,line2) #satrec gets the actual position at a time
+#time of position is given in Julian dates, jday to convert
+#jd and fr are due to how large this number is, jd is the whole number part and fr is the fraction so 0.5 for 12pm
+#error_code is to see if the calc succeeded
+
 kf = KF(pos_init = np.zeros(3), vel_init = np.array([1.0,0.5,0.2]), a_var = 0.1)
-DT = 0.1
+DT = 1.0 #seconds between timesteps 
 N = 1000
+dt_days = DT/86400.0 #fraction of the day
+jd, fr = jday(2026,10,1,12,0,0) #todays date to get todays pos
 MEAS_N = 20
+
+for i in range(N):
+    fr += dt_days #update timestep
+
+    error_code, position, velocity = satrec.sgp4(jd,fr)
+
 
 
 means = []
@@ -23,13 +65,18 @@ real_vels = []
 
 for i in range(N):
     #just for tseting/fun purpses, varying the velocity half way:
-    if i > 500:
-        real_v *=0.9
+    #if i > 500:
+    #    real_v *=0.9
+    fr += dt_days #update timestep
+    
+    error_code, position, velocity = satrec.sgp4(jd,fr)
+    real_x = np.array(position)
+    reak_v = np.array(velocity)
         
     covs.append(kf.cov)
     means.append(kf.mean)
 
-    real_x = real_x + DT*real_v
+    #real_x = real_x + DT*real_v
 
     kf.predict(dt = DT)
 
